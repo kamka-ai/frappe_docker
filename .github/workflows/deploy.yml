@@ -16,7 +16,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /root/frappe_docker || { echo "Directory not found"; exit 1; }
+            cd ~/frappe_docker || { echo "Directory not found"; exit 1; }
             # Update remote to include token for authentication
             git remote set-url origin https://${{ secrets.GHCR_PAT }}@github.com/kamka-ai/frappe_docker.git
             git pull origin main
@@ -27,7 +27,7 @@ jobs:
             # docker compose pull
             
             # Start/Restart services with Traefik SSL and DB/Redis overrides
-            docker compose \
+            sudo docker compose \
               -f compose.yaml \
               -f overrides/compose.https.yaml \
               -f overrides/compose.mariadb.yaml \
