@@ -34,6 +34,11 @@ jobs:
             echo "LETSENCRYPT_EMAIL=contact@kamka.cloud" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD || '123' }}" >> .env # Optional: Use secret if available
             
+            # Attempt to free up port 80/443 by stopping common services
+            echo "Stopping potential conflicting services..."
+            sudo systemctl stop nginx || true
+            sudo systemctl stop apache2 || true
+            
             # Start/Restart services with Traefik SSL and DB/Redis overrides
             sudo docker compose --env-file .env \
               -f compose.yaml \
