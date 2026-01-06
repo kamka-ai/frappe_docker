@@ -28,11 +28,14 @@ jobs:
             git remote set-url origin https://${{ secrets.GHCR_PAT }}@github.com/kamka-ai/frappe_docker.git
             git pull origin main
             
-            export SITES="erp.kamka.cloud"
-            export LETSENCRYPT_EMAIL="contact@kamka.cloud" # Update this if needed or use secret
+            # Create .env file with necessary variables
+            echo "ERPNEXT_VERSION=v15.93.2" > .env
+            echo "SITES=erp.kamka.cloud" >> .env
+            echo "LETSENCRYPT_EMAIL=contact@kamka.cloud" >> .env
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD || '123' }}" >> .env # Optional: Use secret if available
             
             # Start/Restart services with Traefik SSL and DB/Redis overrides
-            sudo docker compose \
+            sudo docker compose --env-file .env \
               -f compose.yaml \
               -f overrides/compose.https.yaml \
               -f overrides/compose.mariadb.yaml \
