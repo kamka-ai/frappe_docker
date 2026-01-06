@@ -16,15 +16,20 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd ~/frappe_docker || { echo "Directory not found"; exit 1; }
-            # Update remote to include token for authentication
+            # Check if directory exists, if not, clone it
+            if [ ! -d "frappe_docker" ]; then
+              echo "Cloning repository..."
+              git clone https://${{ secrets.GHCR_PAT }}@github.com/kamka-ai/frappe_docker.git
+            fi
+            
+            cd frappe_docker || { echo "Directory not found after clone"; exit 1; }
+            
+            # Ensure origin is set correctly with token for future pulls
             git remote set-url origin https://${{ secrets.GHCR_PAT }}@github.com/kamka-ai/frappe_docker.git
             git pull origin main
+            
             export SITES="erp.kamka.cloud"
             export LETSENCRYPT_EMAIL="contact@kamka.cloud" # Update this if needed or use secret
-            
-            # Pull latest images if needed (optional, depends on if you use :latest or specific tags)
-            # docker compose pull
             
             # Start/Restart services with Traefik SSL and DB/Redis overrides
             sudo docker compose \
