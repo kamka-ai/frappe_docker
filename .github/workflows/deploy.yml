@@ -30,7 +30,7 @@ jobs:
             
             # Create .env file with necessary variables
             echo "ERPNEXT_VERSION=v15.93.2" > .env
-            echo "SITES=erp.kamka.cloud" >> .env
+            echo "SITES=\`erp.kamka.cloud\`" >> .env
             echo "LETSENCRYPT_EMAIL=contact@kamka.cloud" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD || '123' }}" >> .env # Optional: Use secret if available
             echo "IMAGE=ghcr.io/kamka-ai/frappe_docker/custom:latest" >> .env # Use our custom image with Raven
@@ -39,6 +39,17 @@ jobs:
             echo "Stopping potential conflicting services..."
             sudo systemctl stop nginx || true
             sudo systemctl stop apache2 || true
+            
+            # Authenticate with GitHub Container Registry (GHCR) to pull custom image
+            echo "${{ secrets.GHCR_PAT }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Use docker compose down to clean up THIS project's containers specifically
+            sudo docker compose --env-file .env \
+              -f compose.yaml \
+              -f overrides/compose.https.yaml \
+              -f overrides/compose.mariadb.yaml \
+              -f overrides/compose.redis.yaml \
+              down --remove-orphans || true
             
             # Start/Restart services with Traefik SSL and DB/Redis overrides
             sudo docker compose --env-file .env \
