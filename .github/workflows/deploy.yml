@@ -33,6 +33,7 @@ jobs:
             echo "SITES=erp.kamka.cloud" >> .env
             echo "LETSENCRYPT_EMAIL=contact@kamka.cloud" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD || '123' }}" >> .env # Optional: Use secret if available
+            echo "IMAGE=ghcr.io/kamka-ai/frappe_docker/custom:latest" >> .env # Use our custom image with Raven
             
             # Attempt to free up port 80/443 by stopping common services
             echo "Stopping potential conflicting services..."
