@@ -33,11 +33,15 @@ jobs:
             echo "SITES=\`erp.kamka.cloud\`" >> .env
             echo "LETSENCRYPT_EMAIL=contact@kamka.cloud" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD || '123' }}" >> .env # Optional: Use secret if available
+            echo "IMAGE=ghcr.io/kamka-ai/frappe_docker/custom:latest" >> .env # Use our newly built custom image
             
             # Attempt to free up port 80/443 by stopping common services
             echo "Stopping potential conflicting services..."
             sudo systemctl stop nginx || true
             sudo systemctl stop apache2 || true
+            
+            # Authenticate with GitHub Container Registry (GHCR) to pull custom image
+            echo "${{ secrets.GHCR_PAT }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             # Use docker compose down to clean up THIS project's containers specifically
             sudo docker compose --env-file .env \
