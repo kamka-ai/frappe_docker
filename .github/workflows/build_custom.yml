@@ -33,6 +33,7 @@ jobs:
       - name: Generate Apps JSON Base64
         id: apps_json
         run: |
+          cat apps.json
           echo "APPS_JSON_BASE64=$(base64 -w 0 apps.json)" >> $GITHUB_ENV
 
       - name: Build and Push
