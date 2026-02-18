@@ -3,14 +3,14 @@ name: Build Custom Image
 on:
   push:
     branches:
-      - main
+      - client-travelbook
     paths:
       - 'apps.json'
       - '.github/workflows/build_custom.yml'
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}/custom
+  IMAGE_NAME: ghcr.io/${{ github.repository }}/client-travelbook
   ERP_VERSION: v15.93.2
 
 jobs:
