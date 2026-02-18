@@ -8,7 +8,7 @@ x-customizable-image: &customizable_image
       PYTHON_VERSION: 3.11.6
       NODE_VERSION: 20.19.2
       APPS_JSON_BASE64: WwogIHsKICAgICJ1cmwiOiAiaHR0cHM6Ly9naXRodWIuY29tL2ZyYXBwZS9lcnBuZXh0IiwKICAgICJicmFuY2giOiAidmVyc2lvbi0xNSIKICB9LAogIHsKICAgICJ1cmwiOiAiaHR0cHM6Ly9naXRodWIuY29tL1RoZS1Db21taXQtQ29tcGFueS9yYXZlbiIsCiAgICAiYnJhbmNoIjogIm1haW4iCiAgfSwKICB7CiAgICAidXJsIjogImh0dHBzOi8vZ2l0aHViLmNvbS9mcmFwcGUvaHJtcyIsCiAgICAiYnJhbmNoIjogInZlcnNpb24tMTUiCiAgfSwKICB7CiAgICAidXJsIjogImh0dHBzOi8vZ2l0aHViLmNvbS9mcmFwcGUvY3JtIiwKICAgICJicmFuY2giOiAibWFpbiIKICB9LAogIHsKICAgICJ1cmwiOiAiaHR0cHM6Ly9naXRodWIuY29tL2ZyYXBwZS9oZWxwZGVzayIsCiAgICAiYnJhbmNoIjogIm1haW4iCiAgfSwKICB7CiAgICAidXJsIjogImh0dHBzOi8vZ2l0aHViLmNvbS9mcmFwcGUvdGVsZXBob255IiwKICAgICJicmFuY2giOiAiZGV2ZWxvcCIKICB9LAogIHsKICAgICJ1cmwiOiAiaHR0cHM6Ly9naXRodWIuY29tL2ZyYXBwZS9nYW1lcGxhbiIsCiAgICAiYnJhbmNoIjogImRldmVsb3AiCiAgfQpd
-  restart: ${RESTART_POLICY:-unless-stopped}
+  restart: unless-stopped
 
 x-depends-on-configurator: &depends_on_configurator
   depends_on:
@@ -21,23 +21,58 @@ x-backend-defaults: &backend_defaults
     - sites:/home/frappe/frappe-bench/sites
 
 services:
+  db:
+    image: mariadb:11.8
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+      - --skip-innodb-read-only-compressed
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-changeme}
+      MARIADB_AUTO_UPGRADE: 1
+    volumes:
+      - db-data:/var/lib/mysql
+
+  redis-cache:
+    image: redis:6.2-alpine
+    restart: unless-stopped
+
+  redis-queue:
+    image: redis:6.2-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-queue-data:/data
+
   configurator:
     <<: *backend_defaults
     platform: linux/amd64
     entrypoint:
       - bash
       - -c
-    # add redis_socketio for backward compatibility
     command:
       - >
         ls -1 apps > sites/apps.txt; bench set-config -g db_host $$DB_HOST; bench set-config -gp db_port $$DB_PORT; bench set-config -g redis_cache "redis://$$REDIS_CACHE"; bench set-config -g redis_queue "redis://$$REDIS_QUEUE"; bench set-config -g redis_socketio "redis://$$REDIS_QUEUE"; bench set-config -gp socketio_port $$SOCKETIO_PORT;
     environment:
-      DB_HOST: ${DB_HOST:-}
-      DB_PORT: ${DB_PORT:-}
-      REDIS_CACHE: ${REDIS_CACHE:-}
-      REDIS_QUEUE: ${REDIS_QUEUE:-}
+      DB_HOST: db
+      DB_PORT: "3306"
+      REDIS_CACHE: redis-cache:6379
+      REDIS_QUEUE: redis-queue:6379
       SOCKETIO_PORT: 9000
-    depends_on: {}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis-cache:
+        condition: service_started
+      redis-queue:
+        condition: service_started
     restart: on-failure
 
   backend:
@@ -88,6 +123,7 @@ services:
     platform: linux/amd64
     command: bench schedule
 
-# ERPNext requires local assets access (Frappe does not)
 volumes:
   sites:
+  db-data:
+  redis-queue-data:
