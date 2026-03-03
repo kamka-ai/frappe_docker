@@ -68,7 +68,7 @@ services:
       SOCKETIO_PORT: 9000
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_started
       redis-cache:
         condition: service_started
       redis-queue:
