@@ -155,5 +155,20 @@ services:
 
 volumes:
   sites:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/ubuntu/frappe-test/sites
   db-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/ubuntu/frappe-test/db-data
   redis-queue-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/ubuntu/frappe-test/redis-data
