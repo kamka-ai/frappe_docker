@@ -125,34 +125,6 @@ services:
     platform: linux/amd64
     command: bench schedule
 
-  create-site:
-    <<: *backend_defaults
-    platform: linux/amd64
-    restart: "no"
-    command:
-      - bash
-      - -c
-      - |
-        wait-for-it -t 120 db:3306;
-        wait-for-it -t 120 redis-cache:6379;
-        wait-for-it -t 120 redis-queue:6379;
-        export SITE=${SITE_NAME:-erp.example.com};
-        export ROOT_PASS=${DB_PASSWORD:-changeme};
-        export ADMIN_PASS=${ADMIN_PASSWORD:-admin};
-        # Test if site exists AND db connection works
-        if bench --site $$SITE execute frappe.ping_primary_replica > /dev/null 2>&1; then
-          echo "Site $$SITE is healthy, skipping creation.";
-        else
-          echo "Site $$SITE missing or DB unreachable. Recreating...";
-          bench drop-site $$SITE --force --mariadb-root-password $$ROOT_PASS 2>/dev/null || true;
-          bench new-site $$SITE \
-            --mariadb-root-password $$ROOT_PASS \
-            --admin-password $$ADMIN_PASS \
-            --install-app erpnext \
-            --no-mariadb-socket;
-          echo "Site $$SITE created successfully with DB user.";
-        fi
-
 volumes:
   sites:
     driver: local
